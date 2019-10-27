@@ -1,0 +1,22 @@
+{
+  "name": "spot-cli",
+  "version": "1.0.0",
+  "description": "command line interface for spotify",
+  "main": "bin/app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vincent Gay",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "keytar": "^5.0.0-beta.3",
+    "open": "^6.4.0",
+    "randomstring": "^1.1.5",
+    "request": "^2.88.0",
+    "yargs": "^14.0.0"
+  },
+  "bin": {
+    "spot-cli": "./bin/index.js"
+  }
+}
