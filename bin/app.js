@@ -16,7 +16,7 @@ let argv = yargs
   .usage('$0 <cmd> [args]')
   .command('login', 'request token to spotify')
   .command('logout', 'clear any token stored locally')
-  .command('show [type]', 'show something')
+  .command('show [type] [id]', 'show something')
   .command({
     command: '*',
     handler() {
@@ -115,9 +115,11 @@ function handleShow() {
       case 'playlists':
         showPlaylists(token)
         break
+      case 'playlist':
+        showPlaylist(token, argv.id)
+        break
       default:
         console.log('what to show ?')
-        process.exit()
         break
     }
   })
@@ -125,31 +127,44 @@ function handleShow() {
 
 function showMe(token) {
   request.get({
-      url: 'https://api.spotify.com/v1/me',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      }
-    },
-    function(error, response, body) {
-      const me = JSON.parse(body)
-      console.log("name:" + me.display_name)
-      console.log("id: " + me.id)
-      console.log("email: " + me.email)
-      process.exit()
-    })
+    url: 'https://api.spotify.com/v1/me',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  },
+  function(error, response, body) {
+    const me = JSON.parse(body)
+    console.log("name:" + me.display_name)
+    console.log("id: " + me.id)
+    console.log("email: " + me.email)
+    process.exit()
+  })
 }
 
 function showPlaylists(token) {
   request.get({
-      url: 'https://api.spotify.com/v1/me/playlists',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      }
-    },
-    function(error, response, body) {
-      const playlists = JSON.parse(body)
-      playlists.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
-      process.exit()
-    })
+    url: 'https://api.spotify.com/v1/me/playlists',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  },
+  function(error, response, body) {
+    const playlists = JSON.parse(body)
+    playlists.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
+    process.exit()
+  })
 }
 
+function showPlaylist(token, id) {
+  request.get({
+    url: `https://api.spotify.com/v1/playlists/${id}/tracks`,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    }
+  },
+  function(error, response, body) {
+    const tracks = JSON.parse(body)
+    tracks.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
+    process.exit()
+  })
+}
