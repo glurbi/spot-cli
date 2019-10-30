@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const request = require('request')
 const rp = require('request-promise')
 const yargs = require('yargs')
 const open = require('open')
@@ -157,14 +156,31 @@ function showPlaylists(token) {
 }
 
 function showPlaylist(token, id) {
-  rp({
-    uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    json: true
-  }).then(function(body) {
-    body.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
-    process.exit()
+  function options(limit, offset) {
+    return {
+      uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      qs: {
+        limit: limit,
+        offset: offset
+      },
+      json: true
+    }
+  }
+  var promises = []
+  rp(options(100,0)).then(function(body) {
+    var offset = 0
+    while (offset < body.total) {
+      promises.push(rp(options(body.limit,offset)))
+      offset += body.limit
+    }
+    Promise.all(promises).then(function(responses) {
+      responses.forEach((response, n) => {
+        response.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
+      })
+      process.exit()
+    })
   })
 }
