@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const request = require('request');
-const yargs = require('yargs');
-const open = require('open');
+const request = require('request')
+const rp = require('request-promise')
+const yargs = require('yargs')
+const open = require('open')
 const express = require('express')
 const randomstring = require("randomstring")
 const keytar = require('keytar')
@@ -54,20 +55,21 @@ function handleLogin() {
   function requestToken() {
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
     const authorizationHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-    request.post({
-        url: 'https://accounts.spotify.com/api/token',
-        headers: {
-          'Authorization': `Basic ${authorizationHeader}`,
-          'content-type' : 'application/x-www-form-urlencoded'
-        },
-        body: `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`
+    rp({
+      method: 'POST',
+      uri: 'https://accounts.spotify.com/api/token',
+      headers: {
+        'Authorization': `Basic ${authorizationHeader}`,
+        'content-type' : 'application/x-www-form-urlencoded'
       },
-      function(error, response, body) {
-        token = JSON.parse(body).access_token
-        keytar.setPassword("spot-cli", "token", token)
-        console.log("logged in!")
-        process.exit()
-      })
+      body: `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`,
+      json: true
+    }).then(function(body) {
+      token = body.access_token
+      keytar.setPassword("spot-cli", "token", token)
+      console.log("logged in!")
+      process.exit()
+    })
   }
 
   function handleRedirect(req, res) {
@@ -86,6 +88,7 @@ function handleLogin() {
 
   callbackListener.get('/', handleRedirect)
   callbackListener.listen(3456)
+
   const baseUrl = 'https://accounts.spotify.com/authorize'
   const scope = 'user-read-private%20user-read-email'
   const url =
@@ -126,45 +129,42 @@ function handleShow() {
 }
 
 function showMe(token) {
-  request.get({
-    url: 'https://api.spotify.com/v1/me',
+  rp({
+    uri: 'https://api.spotify.com/v1/me',
     headers: {
       'Authorization': `Bearer ${token}`,
-    }
-  },
-  function(error, response, body) {
-    const me = JSON.parse(body)
-    console.log("name:" + me.display_name)
-    console.log("id: " + me.id)
-    console.log("email: " + me.email)
+    },
+    json: true
+  }).then(function(body) {
+    console.log("name:" + body.display_name)
+    console.log("id: " + body.id)
+    console.log("email: " + body.email)
     process.exit()
   })
 }
 
 function showPlaylists(token) {
-  request.get({
-    url: 'https://api.spotify.com/v1/me/playlists',
+  rp({
+    uri: 'https://api.spotify.com/v1/me/playlists',
     headers: {
       'Authorization': `Bearer ${token}`,
-    }
-  },
-  function(error, response, body) {
-    const playlists = JSON.parse(body)
-    playlists.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
+    },
+    json: true
+  }).then(function(body) {
+    body.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
     process.exit()
   })
 }
 
 function showPlaylist(token, id) {
-  request.get({
-    url: `https://api.spotify.com/v1/playlists/${id}/tracks`,
+  rp({
+    uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
     headers: {
       'Authorization': `Bearer ${token}`,
-    }
-  },
-  function(error, response, body) {
-    const tracks = JSON.parse(body)
-    tracks.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
+    },
+    json: true
+  }).then(function(body) {
+    body.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
     process.exit()
   })
 }
