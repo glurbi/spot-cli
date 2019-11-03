@@ -16,7 +16,11 @@ let argv = yargs
   .usage('$0 <cmd> [args]')
   .command('login', 'request token to spotify')
   .command('logout', 'clear any token stored locally')
-  .command('show [type] [id]', 'show something')
+  .command('show <what> [index|id]', 'show details for a resource (see examples)')
+  .example('$0 show playlists', 'list all available playlists for the current account')
+  .example('$0 show playlist 12', 'list all the tracks for playlist number 12')
+  .example('$0 show me', 'show the details about the current account')
+  .example('$0 show summary', 'show some numbers...')
   .command({
     command: '*',
     handler() {
@@ -27,23 +31,19 @@ let argv = yargs
   .help()
   .argv
 
-run()
-
-function run() {
-  switch (argv._[0]) {
-    case 'login':
-      handleLogin()
-      break
-    case 'logout':
-      handleLogout()
-      break
-    case 'show':
-      handleShow()
-      break
-    default:
-      yargs.showHelp()
-      break
-  }
+switch (argv._[0]) {
+  case 'login':
+    handleLogin()
+    break
+  case 'logout':
+    handleLogout()
+    break
+  case 'show':
+    handleShow()
+    break
+  default:
+    yargs.showHelp()
+    break
 }
 
 function handleLogin() {
@@ -108,20 +108,11 @@ async function handleShow() {
     console.log("Not logged in!")
     process.exit()
   }
-  switch (argv.type) {
-    case 'me':
-      showMe(token)
-      break
-    case 'playlists':
-      showPlaylists(token)
-      break
-    case 'playlist':
-      showPlaylist(token, argv.id)
-      break
-    default:
-      console.log('what to show ?')
-      break
-  }
+  if (argv.what === 'me') showMe(token)
+  else if (argv.what === 'playlists') showPlaylists(token)
+  else if (argv.what === 'playlist') showPlaylist(token, argv.id)
+  else if (argv.summary) showSummary(token)
+  else console.log('what to show ?')
 }
 
 async function showMe(token) {
@@ -152,39 +143,47 @@ async function showPlaylists(token) {
   process.exit()
 }
 
-async function showPlaylist(token, id) {
+async function fetchPlaylist(token, id) {
 
-  // create options for querying a playlist
-  function options(limit, offset) {
-    return {
-      uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      qs: {
-        limit: limit,
-        offset: offset
-      },
-      json: true
+    // create options for querying a playlist
+    function options(limit, offset) {
+      return {
+        uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        qs: {
+          limit: limit,
+          offset: offset
+        },
+        json: true
+      }
     }
-  }
+  
+    // collect all requests
+    var promises = []
+    const body = await rp(options(100,0))
+    var offset = 0
+    while (offset < body.total) {
+      promises.push(rp(options(body.limit,offset)))
+      offset += body.limit
+    }
+  
+    // execute requests
+    return Promise.all(promises)
+}
 
-  // collect all requests
-  var promises = []
-  const body = await rp(options(100,0))
+async function showPlaylist(token, id) {
+  const responses = await fetchPlaylist(token, id)
   var offset = 0
-  while (offset < body.total) {
-    promises.push(rp(options(body.limit,offset)))
-    offset += body.limit
-  }
-
-  // execute requests and show result
-  const responses = await Promise.all(promises);
-  offset = 0
+  console.log(responses)
   responses.forEach((response, n) => {
     response.items.forEach((item, n) => console.log(`${offset+n+1}. ${item.track.name} ${item.track.id}`))
     offset += 100
   })
+  process.exit()
+}
 
+async function showSummary(token) {
   process.exit()
 }
