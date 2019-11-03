@@ -155,7 +155,9 @@ function showPlaylists(token) {
   })
 }
 
-function showPlaylist(token, id) {
+async function showPlaylist(token, id) {
+
+  // create options for querying a playlist
   function options(limit, offset) {
     return {
       uri: `https://api.spotify.com/v1/playlists/${id}/tracks`,
@@ -169,20 +171,23 @@ function showPlaylist(token, id) {
       json: true
     }
   }
+
+  // collect all requests
   var promises = []
-  rp(options(100,0)).then(function(body) {
-    var offset = 0
-    while (offset < body.total) {
-      promises.push(rp(options(body.limit,offset)))
-      offset += body.limit
-    }
-    Promise.all(promises).then(function(responses) {
-      var offset = 0
-      responses.forEach((response, n) => {
-        response.items.forEach((item, n) => console.log(`${offset+n+1}. ${item.track.name} ${item.track.id}`))
-        offset += 100
-      })
-      process.exit()
-    })
+  const body = await rp(options(100,0))
+  var offset = 0
+  while (offset < body.total) {
+    promises.push(rp(options(body.limit,offset)))
+    offset += body.limit
+  }
+
+  // execute requests and show result
+  const responses = await Promise.all(promises);
+  offset = 0
+  responses.forEach((response, n) => {
+    response.items.forEach((item, n) => console.log(`${offset+n+1}. ${item.track.name} ${item.track.id}`))
+    offset += 100
   })
+
+  process.exit()
 }
