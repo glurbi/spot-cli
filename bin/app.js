@@ -35,8 +35,8 @@ function run() {
       handleLogin()
       break
     case 'logout':
-        handleLogout()
-        break
+      handleLogout()
+      break
     case 'show':
       handleShow()
       break
@@ -96,63 +96,60 @@ function handleLogin() {
   open(url)
 }
 
-function handleLogout() {
-  keytar.deletePassword("spot-cli", "token")
+async function handleLogout() {
+  await keytar.deletePassword("spot-cli", "token")
   console.log("logged out!")
   process.exit()
 }
 
-function handleShow() {
-  keytar
-  .getPassword("spot-cli", "token")
-  .then((token) => {
-    if (token == null) {
-      console.log("Not logged in!")
-      process.exit()
-    }
-    switch (argv.type) {
-      case 'me':
-        showMe(token)
-        break
-      case 'playlists':
-        showPlaylists(token)
-        break
-      case 'playlist':
-        showPlaylist(token, argv.id)
-        break
-      default:
-        console.log('what to show ?')
-        break
-    }
-  })
+async function handleShow() {
+  const token = await keytar.getPassword("spot-cli", "token")
+  if (token == null) {
+    console.log("Not logged in!")
+    process.exit()
+  }
+  switch (argv.type) {
+    case 'me':
+      showMe(token)
+      break
+    case 'playlists':
+      showPlaylists(token)
+      break
+    case 'playlist':
+      showPlaylist(token, argv.id)
+      break
+    default:
+      console.log('what to show ?')
+      break
+  }
 }
 
-function showMe(token) {
-  rp({
+async function showMe(token) {
+  const options = {
     uri: 'https://api.spotify.com/v1/me',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
     json: true
-  }).then(function(body) {
-    console.log("name:" + body.display_name)
-    console.log("id: " + body.id)
-    console.log("email: " + body.email)
-    process.exit()
-  })
+  }
+  const body = await rp(options)
+  console.log("name:" + body.display_name)
+  console.log("id: " + body.id)
+  console.log("email: " + body.email)
+  process.exit()
 }
 
-function showPlaylists(token) {
-  rp({
+async function showPlaylists(token) {
+  const options = {
     uri: 'https://api.spotify.com/v1/me/playlists',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
     json: true
-  }).then(function(body) {
-    body.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
-    process.exit()
-  })
+  }
+  const body = await rp(options)
+  body.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
+  process.exit()
 }
 
 async function showPlaylist(token, id) {
