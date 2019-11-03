@@ -130,7 +130,7 @@ async function showMe(token) {
   process.exit()
 }
 
-async function showPlaylists(token) {
+async function fetchPlaylists(token) {
   const options = {
     uri: 'https://api.spotify.com/v1/me/playlists',
     headers: {
@@ -139,7 +139,12 @@ async function showPlaylists(token) {
     json: true
   }
   const body = await rp(options)
-  body.items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
+  return body.items
+}
+
+async function showPlaylists(token) {
+  const items = await fetchPlaylists(token)
+  items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
   process.exit()
 }
 
@@ -170,17 +175,13 @@ async function fetchPlaylist(token, id) {
     }
   
     // execute requests
-    return Promise.all(promises)
+    const responses = await Promise.all(promises)
+    return responses.flatMap(x => x.items)
 }
 
 async function showPlaylist(token, id) {
-  const responses = await fetchPlaylist(token, id)
-  var offset = 0
-  console.log(responses)
-  responses.forEach((response, n) => {
-    response.items.forEach((item, n) => console.log(`${offset+n+1}. ${item.track.name} ${item.track.id}`))
-    offset += 100
-  })
+  const items = await fetchPlaylist(token, id)
+  items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
   process.exit()
 }
 
