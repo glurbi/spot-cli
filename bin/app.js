@@ -177,8 +177,10 @@ function showPlaylist(token, id) {
       offset += body.limit
     }
     Promise.all(promises).then(function(responses) {
+      var offset = 0
       responses.forEach((response, n) => {
-        response.items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
+        response.items.forEach((item, n) => console.log(`${offset+n+1}. ${item.track.name} ${item.track.id}`))
+        offset += 100
       })
       process.exit()
     })
