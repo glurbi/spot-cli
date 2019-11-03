@@ -51,10 +51,10 @@ function handleLogin() {
   const redirectUri = 'http://localhost:3456/'
   const callbackListener = express()
   
-  function requestToken() {
+  async function requestToken() {
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
     const authorizationHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-    rp({
+    const options = {
       method: 'POST',
       uri: 'https://accounts.spotify.com/api/token',
       headers: {
@@ -63,12 +63,12 @@ function handleLogin() {
       },
       body: `grant_type=authorization_code&code=${code}&redirect_uri=${redirectUri}`,
       json: true
-    }).then(function(body) {
-      token = body.access_token
-      keytar.setPassword("spot-cli", "token", token)
-      console.log("logged in!")
-      process.exit()
-    })
+    }
+    const body = await rp(options)
+    token = body.access_token
+    await keytar.setPassword("spot-cli", "token", token)
+    console.log("logged in!")
+    process.exit()
   }
 
   function handleRedirect(req, res) {
