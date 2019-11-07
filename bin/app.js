@@ -196,10 +196,23 @@ async function showSummary(token) {
   for (var i = 0; i < playlists.length; i++) {
     const id = playlists[i].id 
     const items = await fetchPlaylist(token, id)
-    items.forEach((item, n) => tracks.push(item.track))
+    items.forEach((item, n) => {
+      const track = { playlistId: id, track: item.track }
+      tracks.push(track)
+    })
     process.stdout.write(".")
   }
   console.log("")
   console.log(`${tracks.length} tracks`)
+  var tracksByIds = {}
+  tracks.forEach(
+    (track, n) => {
+      if (tracksByIds[track.track.id] == undefined) {
+        tracksByIds[track.track.id] = [ track.playlistId ]
+      } else {
+        tracksByIds[track.track.id].push(track.playlistId)
+      }
+  })
+  console.log(`${Object.keys(tracksByIds).length} unique tracks`)
   process.exit()
 }
