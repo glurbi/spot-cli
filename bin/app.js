@@ -111,7 +111,7 @@ async function handleShow() {
   if (argv.what === 'me') showMe(token)
   else if (argv.what === 'playlists') showPlaylists(token)
   else if (argv.what === 'playlist') showPlaylist(token, argv.id)
-  else if (argv.summary) showSummary(token)
+  else if (argv.what === 'summary') showSummary(token)
   else console.log('what to show ?')
 }
 
@@ -144,7 +144,9 @@ async function fetchPlaylists(token) {
 
 async function showPlaylists(token) {
   const items = await fetchPlaylists(token)
-  items.forEach((item, n) => console.log(`${n+1}. ${item.name} ${item.id}`))
+  items.forEach(
+    (item, n) => console.log(`${n+1}. ${item.name} ${item.id}`)
+  )
   process.exit()
 }
 
@@ -181,10 +183,23 @@ async function fetchPlaylist(token, id) {
 
 async function showPlaylist(token, id) {
   const items = await fetchPlaylist(token, id)
-  items.forEach((item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`))
+  items.forEach(
+    (item, n) => console.log(`${n+1}. ${item.track.name} ${item.track.id}`)
+  )
   process.exit()
 }
 
 async function showSummary(token) {
+  const playlists = await fetchPlaylists(token)
+  console.log(`${playlists.length} playlists`)
+  var tracks = []
+  for (var i = 0; i < playlists.length; i++) {
+    const id = playlists[i].id 
+    const items = await fetchPlaylist(token, id)
+    items.forEach((item, n) => tracks.push(item.track))
+    process.stdout.write(".")
+  }
+  console.log("")
+  console.log(`${tracks.length} tracks`)
   process.exit()
 }
