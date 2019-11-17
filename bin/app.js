@@ -189,30 +189,66 @@ async function showPlaylist(token, id) {
   process.exit()
 }
 
-async function showSummary(token) {
+async function fetchPlaylistsAndTracks(token) {
   const playlists = await fetchPlaylists(token)
-  console.log(`${playlists.length} playlists`)
-  var tracks = []
+  const deepPlaylists = {}
   for (var i = 0; i < playlists.length; i++) {
-    const id = playlists[i].id 
-    const items = await fetchPlaylist(token, id)
+    const playlist = playlists[i]
+    const playlistId = playlist.id
+    const tracks = []
+    const items = await fetchPlaylist(token, playlistId)
     items.forEach((item, n) => {
-      const track = { playlistId: id, track: item.track }
-      tracks.push(track)
+       tracks.push(item.track)
     })
+    deepPlaylists[playlistId] = { playlist, tracks }
     process.stdout.write(".")
   }
   console.log("")
-  console.log(`${tracks.length} tracks`)
+  return deepPlaylists
+}
+
+function computeSummary(deepPlaylists) {
   var tracksByIds = {}
-  tracks.forEach(
-    (track, n) => {
-      if (tracksByIds[track.track.id] == undefined) {
-        tracksByIds[track.track.id] = [ track.playlistId ]
-      } else {
-        tracksByIds[track.track.id].push(track.playlistId)
+  var trackCount = 0
+  Object.values(deepPlaylists).forEach(
+    (playlist, n) => {
+      playlist.tracks.forEach(
+        (track, n) => {
+          if (tracksByIds[track.id] == undefined) {
+            tracksByIds[track.id] = {
+              playlistIds: [],
+              track: track
+            }
+          }
+          tracksByIds[track.id].playlistIds.push(playlist.playlist.id)
+          trackCount++
+        }
+      )
+    }
+  )
+  return {
+    playlistCount: Object.keys(deepPlaylists).length,
+    trackCount,
+    uniqueTrackCount: Object.keys(tracksByIds).length,
+    tracksByIds
+  }
+}
+
+async function showSummary(token) {
+  const deepPlaylists = await fetchPlaylistsAndTracks(token)
+  const summary = computeSummary(deepPlaylists)
+  console.log(`${summary.playlistCount} playlists`)
+  console.log(`${summary.trackCount} tracks`)
+  console.log(`${summary.uniqueTrackCount} unique tracks`)
+  Object
+    .values(summary.tracksByIds)
+    .filter(tracksById => tracksById.playlistIds.length > 1)
+    .forEach(
+      (tracksById, n) => {
+        const playlistNames = tracksById.playlistIds
+          .map(id => deepPlaylists[id].playlist.name)
+        console.log(tracksById.track.name + " -> " + playlistNames.join())
       }
-  })
-  console.log(`${Object.keys(tracksByIds).length} unique tracks`)
+    )
   process.exit()
 }
