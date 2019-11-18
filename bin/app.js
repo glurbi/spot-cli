@@ -112,6 +112,7 @@ async function handleShow() {
   else if (argv.what === 'playlists') showPlaylists(token)
   else if (argv.what === 'playlist') showPlaylist(token, argv.id)
   else if (argv.what === 'summary') showSummary(token)
+  else if (argv.what === 'duplicates') showDuplicates(token)
   else console.log('what to show ?')
 }
 
@@ -240,6 +241,12 @@ async function showSummary(token) {
   console.log(`${summary.playlistCount} playlists`)
   console.log(`${summary.trackCount} tracks`)
   console.log(`${summary.uniqueTrackCount} unique tracks`)
+  process.exit()
+}
+
+async function showDuplicates(token) {
+  const deepPlaylists = await fetchPlaylistsAndTracks(token)
+  const summary = computeSummary(deepPlaylists)
   Object
     .values(summary.tracksByIds)
     .filter(tracksById => tracksById.playlistIds.length > 1)
