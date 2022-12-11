@@ -9,7 +9,7 @@
   "author": "Vincent Gay",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "keytar": "^5.0.0-beta.3",
     "open": "^6.4.0",
     "randomstring": "^1.1.5",
